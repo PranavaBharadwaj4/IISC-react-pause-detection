@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 const SpeechRecorder = () => {
   const [recording, setRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   let mediaStream = null;
 
   useEffect(() => {
@@ -37,11 +38,13 @@ const SpeechRecorder = () => {
     const onSilence = () => {
       console.log('silence');
       //actions to be performed on silence.
+      setIsSpeaking(false);
     };
 
     const onSpeak = () => {
       console.log('speaking');
       //actions to be performed on speech detection. 
+      setIsSpeaking(true);
 
     };
 
@@ -82,7 +85,8 @@ const SpeechRecorder = () => {
   };
 
   return (
-    <div>
+    <div className="speech-recorder">
+      <div className={`indicator ${isSpeaking ? 'speaking' : 'silence'}`} />
       <button onClick={handleStartRecording} disabled={recording}>
         Start Recording
       </button>
