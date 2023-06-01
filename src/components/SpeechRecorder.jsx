@@ -112,6 +112,13 @@ const SpeechRecorder = () => {
     <div className="speech-recorder">
       <div className={`indicator ${isSpeaking ? 'speaking' : 'silence'}`} />
       <div>Noise Level: {noiseLevel.toFixed(2)}</div>
+      <div className='face-container'>
+      {noiseLevel <= 5 ? 'Excellent' :
+        noiseLevel <= 10 ? 'Good' :
+        noiseLevel <= 20 ? 'Bad' :
+        'Poor'
+      }
+    </div>
       <div>Decibel Level: {decibelLevel.toFixed(2)}</div>
       <div>Average Decibel: {averageDecibel.toFixed(2)}</div>
       <div className='face-container'>
