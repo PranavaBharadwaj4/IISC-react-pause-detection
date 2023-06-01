@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 const SpeechRecorder = () => {
   const [recording, setRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [noiseLevel, setNoiseLevel] = useState(0);
+  const [decibelLevel, setDecibelLevel] = useState(0);
   let mediaStream = null;
 
   useEffect(() => {
@@ -20,6 +22,15 @@ const SpeechRecorder = () => {
       function loop(time) {
         requestAnimationFrame(loop);
         analyser.getByteFrequencyData(data);
+
+        // Calculate noise level as the average of all frequency data values
+        const average = Array.from(data).reduce((sum, value) => sum + value, 0) / data.length;
+        setNoiseLevel(average);
+
+        // Convert noise level to decibels
+        const decibels = 20 * Math.log10(average / 255);
+        setDecibelLevel(decibels);
+
         if (data.some((v) => v)) {
           if (triggered) {
             triggered = false;
@@ -87,6 +98,8 @@ const SpeechRecorder = () => {
   return (
     <div className="speech-recorder">
       <div className={`indicator ${isSpeaking ? 'speaking' : 'silence'}`} />
+      <div>Noise Level: {noiseLevel.toFixed(2)}</div>
+      <div>Decibel Level: {decibelLevel.toFixed(2)}</div>
       <button onClick={handleStartRecording} disabled={recording}>
         Start Recording
       </button>
