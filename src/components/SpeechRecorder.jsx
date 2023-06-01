@@ -116,8 +116,8 @@ const SpeechRecorder = () => {
       <div>Average Decibel: {averageDecibel.toFixed(2)}</div>
       <div className='face-container'>
       {averageDecibel >= -40 ? 'Excellent' :
-        averageDecibel >= -60 ? 'Good' :
-        averageDecibel >= -80 ? 'Bad' :
+        averageDecibel >= -55 ? 'Good' :
+        averageDecibel >= -60 ? 'Bad' :
         'Poor'
       }
     </div>
