@@ -5,6 +5,7 @@ const SpeechRecorder = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [noiseLevel, setNoiseLevel] = useState(0);
   const [decibelLevel, setDecibelLevel] = useState(0);
+  const [decibelHistory, setDecibelHistory] = useState([]);
   let mediaStream = null;
 
   useEffect(() => {
@@ -14,6 +15,7 @@ const SpeechRecorder = () => {
       const streamNode = ctx.createMediaStreamSource(stream);
       streamNode.connect(analyser);
       analyser.minDecibels = minDecibels;
+      analyser.maxDecibels = minDecibels + 80;
 
       const data = new Uint8Array(analyser.frequencyBinCount);
       let silenceStart = performance.now();
@@ -29,7 +31,12 @@ const SpeechRecorder = () => {
 
         // Convert noise level to decibels
         const decibels = 20 * Math.log10(average / 255);
-        setDecibelLevel(decibels);
+        if (isFinite(decibels)) {
+          setDecibelLevel(decibels);
+        }
+
+        // Update decibel history
+        setDecibelHistory((prevHistory) => [...prevHistory, decibels]);
 
         if (data.some((v) => v)) {
           if (triggered) {
@@ -64,7 +71,7 @@ const SpeechRecorder = () => {
         .getUserMedia({ audio: true })
         .then((stream) => {
           mediaStream = stream;
-          detectSilence(stream, onSilence, onSpeak, 500, -70);
+          detectSilence(stream, onSilence, onSpeak, 500, -90);
         })
         .catch((error) => {
           console.error('Error accessing microphone:', error);
@@ -94,12 +101,26 @@ const SpeechRecorder = () => {
   const handleStopRecording = () => {
     setRecording(false);
   };
+   // Calculate the average decibel value
+  //  const averageDecibel = decibelHistory.reduce((sum, decibel) => sum + decibel, 0) / decibelHistory.length;
+  const filteredDecibelHistory = decibelHistory.filter((decibel) => isFinite(decibel));
+  const averageDecibel = filteredDecibelHistory.length > 0
+    ? filteredDecibelHistory.reduce((sum, decibel) => sum + decibel, 0) / filteredDecibelHistory.length
+    : 0;
 
   return (
     <div className="speech-recorder">
       <div className={`indicator ${isSpeaking ? 'speaking' : 'silence'}`} />
       <div>Noise Level: {noiseLevel.toFixed(2)}</div>
       <div>Decibel Level: {decibelLevel.toFixed(2)}</div>
+      <div>Average Decibel: {averageDecibel.toFixed(2)}</div>
+      <div className='face-container'>
+      {averageDecibel >= -40 ? 'Excellent' :
+        averageDecibel >= -60 ? 'Good' :
+        averageDecibel >= -80 ? 'Bad' :
+        'Poor'
+      }
+    </div>
       <button onClick={handleStartRecording} disabled={recording}>
         Start Recording
       </button>

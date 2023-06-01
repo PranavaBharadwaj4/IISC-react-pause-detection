@@ -38,3 +38,42 @@ button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
 }
+
+.face-container {
+  display: flex;
+  justify-content: center;
+  margin: 2rem;
+  
+}
+
+.face {
+  font-size: 24px;
+  padding: 10px 20px;
+  border-radius: 50%;
+  text-align: center;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.excellent {
+  background-color: green;
+  color: white;
+}
+
+.good {
+  background-color: lightgreen;
+  color: black;
+}
+
+.bad {
+  background-color: yellow;
+  color: black;
+}
+
+.poor {
+  background-color: red;
+  color: white;
+}
