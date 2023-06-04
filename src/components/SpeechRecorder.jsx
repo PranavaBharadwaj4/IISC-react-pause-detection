@@ -66,7 +66,7 @@ const SpeechRecorder = () => {
       setRecording(false); // Stop recording on silence
       setTimeout(() => {
         setIsPaused(false); // Resume activity after 10 seconds
-      }, 3000);
+      }, 5000);
     };
 
     const onSpeak = () => {
