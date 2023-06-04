@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 const SpeechRecorder = () => {
   const [recording, setRecording] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(true);
   const [noiseLevel, setNoiseLevel] = useState(0);
   const [decibelLevel, setDecibelLevel] = useState(0);
   const [decibelHistory, setDecibelHistory] = useState([]);
@@ -10,7 +10,10 @@ const SpeechRecorder = () => {
 
   let mediaStream = null;
 
+  let r = 0;
+  
   useEffect(() => {
+    console.log(++r)
     const detectSilence = (stream, onSoundEnd, onSoundStart, silenceDelay, minDecibels) => {
       const ctx = new AudioContext();
       const analyser = ctx.createAnalyser();
@@ -42,8 +45,8 @@ const SpeechRecorder = () => {
 
         if (data.some((v) => v)) {
           if (triggered) {
-            triggered = false;
             onSoundStart();
+            triggered = false;
           }
           silenceStart = time;
         }
@@ -59,6 +62,11 @@ const SpeechRecorder = () => {
       console.log('silence');
       //actions to be performed on silence.
       setIsSpeaking(false);
+      setIsPaused(true); 
+      setRecording(false); // Stop recording on silence
+      setTimeout(() => {
+        setIsPaused(false); // Resume activity after 10 seconds
+      }, 3000);
     };
 
     const onSpeak = () => {
@@ -73,7 +81,7 @@ const SpeechRecorder = () => {
         .getUserMedia({ audio: true })
         .then((stream) => {
           mediaStream = stream;
-          detectSilence(stream, onSilence, onSpeak, 500, -70);
+          detectSilence(stream, onSilence, onSpeak, 3000, -60);
         })
         .catch((error) => {
           console.error('Error accessing microphone:', error);
@@ -111,9 +119,10 @@ const SpeechRecorder = () => {
     : 0;
 
     const handlePauseActivity = () => {
-      setRecording(false);
+      // setRecording(false);
+      setIsSpeaking(false);
       setIsPaused(true);
-console.log(recording)
+      console.log(recording)
       setTimeout(() => {
         setIsPaused(false);
       }, 10000);
@@ -142,8 +151,7 @@ console.log(recording)
             <button onClick={handleStopRecording} disabled={!recording}>
               Stop Recording
             </button>
-            {console.log(isSpeaking)}
-            <button onClick={handlePauseActivity} disabled={isSpeaking}>
+            <button  disabled={isSpeaking}>
               Submit
             </button>
           </div>

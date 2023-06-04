@@ -6,55 +6,18 @@ const SpeechRecorder = () => {
   const [noiseLevel, setNoiseLevel] = useState(0);
   const [decibelLevel, setDecibelLevel] = useState(0);
   const [decibelHistory, setDecibelHistory] = useState([]);
-
   const [isPaused, setIsPaused] = useState(false);
+
   let mediaStream = null;
 
   useEffect(() => {
-    // let audioContext = null;
-    // let scriptProcessorNode = null;
-    let decibels = null;
-    // let mediaStreamSource = null;
-    const detectSilence = async (stream, onSoundEnd, onSoundStart, silenceDelay, minDecibels) => {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const detectSilence = (stream, onSoundEnd, onSoundStart, silenceDelay, minDecibels) => {
+      const ctx = new AudioContext();
       const analyser = ctx.createAnalyser();
       const streamNode = ctx.createMediaStreamSource(stream);
-
-      // Create a script processor node with a buffer size of 2048
-      const scriptNode = ctx.createScriptProcessor(4096, 1, 1);
-      scriptNode.onaudioprocess = processAudio;
-      streamNode.connect(scriptNode)
-      scriptNode.connect(ctx.destination);
       streamNode.connect(analyser);
-
-
       analyser.minDecibels = minDecibels;
-      analyser.maxDecibels = minDecibels + 80;
-
-      const processAudio = (event) => {
-        const inputData = event.inputBuffer.getChannelData(0);
-        const outputData = event.outputBuffer.getChannelData(0);
-  
-        // Perform noise suppression here
-        // Apply your noise suppression algorithm to attenuate the background noise
-  
-        // Copy the processed audio to the output buffer
-        for (let i = 0; i < inputData.length; i++) {
-          outputData[i] = inputData[i];
-        }
-  
-        // Calculate noise level and decibel level
-        const sumOfSquares = inputData.reduce((sum, value) => sum + value ** 2, 0);
-        const rms = Math.sqrt(sumOfSquares / inputData.length);
-        const noise = rms * Math.sqrt(2); // Assuming the input signal is a sine wave
-  
-        setNoiseLevel(noise);
-        // setDecibelLevel(20 * Math.log10(noise));
-        decibels = 20 * Math.log10(noise);
-        if (isFinite(decibels)) {
-          setDecibelLevel(decibels);
-        }
-      };
+      // analyser.maxDecibels = minDecibels + 80;
 
       const data = new Uint8Array(analyser.frequencyBinCount);
       let silenceStart = performance.now();
@@ -65,14 +28,14 @@ const SpeechRecorder = () => {
         analyser.getByteFrequencyData(data);
 
         // Calculate noise level as the average of all frequency data values
-        // const average = Array.from(data).reduce((sum, value) => sum + value, 0) / data.length;
-        // setNoiseLevel(average);
+        const average = Array.from(data).reduce((sum, value) => sum + value, 0) / data.length;
+        setNoiseLevel(average);
 
-        // // Convert noise level to decibels
-        // const decibels = 20 * Math.log10(average / 255);
-        // if (isFinite(decibels)) {
-        //   setDecibelLevel(decibels);
-        // }
+        // Convert noise level to decibels
+        const decibels = 20 * Math.log10(average / 255);
+        if (isFinite(decibels)) {
+          setDecibelLevel(decibels);
+        }
 
         // Update decibel history
         setDecibelHistory((prevHistory) => [...prevHistory, decibels]);
@@ -110,7 +73,7 @@ const SpeechRecorder = () => {
         .getUserMedia({ audio: true })
         .then((stream) => {
           mediaStream = stream;
-          detectSilence(stream, onSilence, onSpeak, 500, -90);
+          detectSilence(stream, onSilence, onSpeak, 500, -70);
         })
         .catch((error) => {
           console.error('Error accessing microphone:', error);
@@ -148,7 +111,9 @@ const SpeechRecorder = () => {
     : 0;
 
     const handlePauseActivity = () => {
+      setRecording(false);
       setIsPaused(true);
+console.log(recording)
       setTimeout(() => {
         setIsPaused(false);
       }, 10000);
@@ -177,6 +142,7 @@ const SpeechRecorder = () => {
             <button onClick={handleStopRecording} disabled={!recording}>
               Stop Recording
             </button>
+            {console.log(isSpeaking)}
             <button onClick={handlePauseActivity} disabled={isSpeaking}>
               Submit
             </button>
@@ -184,7 +150,6 @@ const SpeechRecorder = () => {
         )}
       </div>
     );
-  };
-
+};
 
 export default SpeechRecorder;
