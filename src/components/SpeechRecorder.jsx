@@ -111,7 +111,9 @@ const SpeechRecorder = () => {
     : 0;
 
     const handlePauseActivity = () => {
+      setRecording(false);
       setIsPaused(true);
+console.log(recording)
       setTimeout(() => {
         setIsPaused(false);
       }, 10000);
@@ -140,6 +142,7 @@ const SpeechRecorder = () => {
             <button onClick={handleStopRecording} disabled={!recording}>
               Stop Recording
             </button>
+            {console.log(isSpeaking)}
             <button onClick={handlePauseActivity} disabled={isSpeaking}>
               Submit
             </button>
