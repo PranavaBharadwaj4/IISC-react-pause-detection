@@ -1,53 +1,46 @@
 import React, { useEffect, useState } from 'react';
 
 const SpeechRecorder = () => {
-  const [recording, setRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [averageNoiseLevel, setAverageNoiseLevel] = useState(0);
-  const [noiseSamples, setNoiseSamples] = useState([]);
-  const [audioCategory, setAudioCategory] = useState('')
+  const [noiseLevel, setNoiseLevel] = useState(0);
+  const [noiseAverage, setNoiseAverage] = useState(0);
+  const [audioCategory, setAudioCategory] = useState('');
+  const [isPaused, setIsPaused] = useState(false);
 
   let mediaStream = null;
 
   useEffect(() => {
     const detectSilence = (stream, onSoundEnd, onSoundStart, silenceDelay, minDecibels) => {
-      const audioContext = new AudioContext();
-      const analyserNode = audioContext.createAnalyser();
-      const streamNode = audioContext.createMediaStreamSource(stream);
-      streamNode.connect(analyserNode);
-      analyserNode.minDecibels = minDecibels;
+      console.log("called")
+      const ctx = new AudioContext();
+      const analyser = ctx.createAnalyser();
+      const streamNode = ctx.createMediaStreamSource(stream);
+      streamNode.connect(analyser);
+      analyser.minDecibels = minDecibels;
 
-      const bufferLength = analyserNode.fftSize;
-      const dataArray = new Uint8Array(bufferLength);
-
+      const data = new Uint8Array(analyser.frequencyBinCount);
       let silenceStart = performance.now();
-      let triggered = false;
+      let triggered = true;
 
       function loop(time) {
         requestAnimationFrame(loop);
-        analyserNode.getByteFrequencyData(dataArray);
+        analyser.getByteFrequencyData(data);
 
-        // Calculate the average value of the frequency data
-        const average = dataArray.reduce((a, b) => a + b, 0) / bufferLength;
+        // Calculate noise level as the average of all frequency data values
+        const average = Array.from(data).reduce((sum, value) => sum + value, 0) / data.length;
+        setNoiseLevel(average);
 
-        // Push the average value to the noise samples array
-        setNoiseSamples((prevSamples) => {
-          console.log(average)
-          const updatedSamples = [...prevSamples, average];
-          if (updatedSamples.length > 10 * (audioContext.sampleRate / analyserNode.fftSize)) {
-            updatedSamples.shift();
-          }
-          return updatedSamples;
-        });
-
-        if (dataArray.some((v) => v)) {
+        if (data.some((v) => v)) {
           if (triggered) {
-            triggered = false;
+            // setIsSpeaking(true);
             onSoundStart();
+            triggered = false;   
+
           }
           silenceStart = time;
         }
         if (!triggered && time - silenceStart > silenceDelay) {
+          console.log("silence block")
           onSoundEnd();
           triggered = true;
         }
@@ -56,34 +49,32 @@ const SpeechRecorder = () => {
     };
 
     const onSilence = () => {
-      console.log('silence');
-      //actions to be performed on silence.
+      console.log("silence")
       setIsSpeaking(false);
+      setIsPaused(true);
+      setTimeout(() => {
+        setIsPaused(false);
+      }, 3000);
     };
+    
 
     const onSpeak = () => {
       console.log('speaking');
-      //actions to be performed on speech detection.
+      //actions to be performed on speech detection. 
       setIsSpeaking(true);
+
     };
 
-    if (recording) {
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          mediaStream = stream;
-          detectSilence(stream, onSilence, onSpeak, 500, -70);
-        })
-        .catch((error) => {
-          console.error('Error accessing microphone:', error);
-        });
-    } else {
-      if (mediaStream) {
-        mediaStream.getTracks().forEach((track) => {
-          track.stop();
-        });
-      }
-    }
+    // Call detectSilence on load
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        mediaStream = stream;
+        detectSilence(stream, onSilence,onSpeak, 3000, -70);
+      })
+      .catch((error) => {
+        console.error('Error accessing microphone:', error);
+      });
 
     // Cleanup function
     return () => {
@@ -93,89 +84,45 @@ const SpeechRecorder = () => {
         });
       }
     };
-  }, [recording]);
+  }, []);
 
   // useEffect(() => {
-    // const calculateAverageNoiseLevel = () => {
-    //   const sum = noiseSamples.reduce((total, value) => total + value, 0);
-    //   return sum / noiseSamples.length;
-    // };
+  //   const calculateNoiseAverage = setInterval(() => {
+  //     setNoiseAverage(noiseLevel);
+  //   }, 10000);
 
-    // console.log(noiseSamples)
-    // const averageNoiseLevelInterval = setInterval(() => {
-    //   const averageNoiseLevel = calculateAverageNoiseLevel();
-    //   setAverageNoiseLevel(averageNoiseLevel);
-    // }, 1000);
-
-    // return () => clearInterval(averageNoiseLevelInterval);
-    // if (noiseSamples.length > 10 * (audioContext.sampleRate / analyserNode.fftSize)) {
-    //   setNoiseSamples((prevSamples) => prevSamples.slice(1));
-    //   const averageNoiseLevel = calculateAverageNoiseLevel();
-    //   setAverageNoiseLevel(averageNoiseLevel);
-    // }
-
-    
-  // }, [noiseSamples]);
-
+  //   return () => {
+  //     clearInterval(calculateNoiseAverage);
+  //   };
+  // }, [noiseLevel]);
 
   useEffect(() => {
-    const calculateAverageNoiseLevel = () => {
-      const sum = noiseSamples.reduce((total, value) => total + value, 0);
-      return sum / noiseSamples.length;
-    };
-    console.log(noiseSamples)
-    const recursiveFunction = (recording) => {
-      if (recording && averageNoiseLevel !== 0) {
-        console.log('Calling the function again...');
-        const averageNoise = calculateAverageNoiseLevel();
-        console.log("avg: ",averageNoise)
-        setAverageNoiseLevel(averageNoiseLevel);
-
-        setTimeout(() => {
-          recursiveFunction(recording);
-        }, 1000);
-      }
-    };
-
-    // Call the recursive function initially with the parameter set to true
-    recursiveFunction(recording);
-
-    // Clean up the timer when the component unmounts
-    return () => clearTimeout(recursiveFunction);
-  }, [recording]);
-
-
-  useEffect(() => {
-    if (averageNoiseLevel >= 80) {
+    if (noiseAverage >= 80) {
       setAudioCategory('Excellent');
-    } else if (averageNoiseLevel >= 60) {
+    } else if (noiseAverage >= 60) {
       setAudioCategory('Good');
-    } else if (averageNoiseLevel >= 40) {
+    } else if (noiseAverage >= 40) {
       setAudioCategory('Bad');
     } else {
       setAudioCategory('Poor');
     }
-  }, [averageNoiseLevel]);
-
-  const handleStartRecording = () => {
-    setRecording(true);
-  };
-
-  const handleStopRecording = () => {
-    setRecording(false);
-  };
+  }, [noiseAverage]);
 
   return (
     <div className="speech-recorder">
-      <div className={`indicator ${isSpeaking ? 'speaking' : 'silence'}`} />
-      <div>Noise Level: {averageNoiseLevel.toFixed(2)}</div>
-      <div>Audio Category: {audioCategory}</div>
-      <button onClick={handleStartRecording} disabled={recording}>
-        Start Recording
-      </button>
-      <button onClick={handleStopRecording} disabled={!recording}>
-        Stop Recording
-      </button>
+      {isPaused ? (
+          <div className="loading-frame">
+            <span>Loading...</span>
+          </div>
+        ) : (
+          <>
+          
+          <div className={`indicator ${isSpeaking ? 'speaking' : 'silence'}`} />
+          <div>Noise Level: {noiseLevel.toFixed(2)}</div>
+          <div>Audio Category: {audioCategory}</div>
+          </>
+        )}
+      
     </div>
   );
 };

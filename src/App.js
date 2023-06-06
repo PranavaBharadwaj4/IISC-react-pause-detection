@@ -5,8 +5,8 @@ import SendRecording from './components/SendRecording';
 function App() {
   return (
     <>
-    {/* <SpeechRecorderTwo /> */}
-    <SpeechRecorder />
+    <SpeechRecorderTwo />
+    {/* <SpeechRecorder /> */}
 
     {/* <SendRecording /> */}
     </>

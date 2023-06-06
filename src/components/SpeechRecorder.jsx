@@ -46,7 +46,7 @@ const SpeechRecorder = () => {
         if (data.some((v) => v)) {
           if (triggered) {
             onSoundStart();
-            triggered = false;
+            triggered = false;   
           }
           silenceStart = time;
         }
