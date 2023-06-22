@@ -3,9 +3,12 @@ import React, { useEffect, useState } from 'react';
 const SpeechRecorder = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [noiseLevel, setNoiseLevel] = useState(0);
+  const [noiseLevels, setNoiseLevels] = useState([]);
   const [noiseAverage, setNoiseAverage] = useState(0);
   const [audioCategory, setAudioCategory] = useState('');
   const [isPaused, setIsPaused] = useState(false);
+  const windowSize = 100; // Adjust the window size as per your needs
+  
 
   let mediaStream = null;
 
@@ -29,6 +32,12 @@ const SpeechRecorder = () => {
         // Calculate noise level as the average of all frequency data values
         const average = Array.from(data).reduce((sum, value) => sum + value, 0) / data.length;
         setNoiseLevel(average);
+        // setNoiseLevels(prevLevels => [...prevLevels, average]); // Add the noise level to the array
+        setNoiseLevels(prevLevels => {
+          const updatedLevels = [...prevLevels, average].slice(-windowSize); // Maintain the window size
+          setNoiseAverage(calculateAverage(updatedLevels)); // Update the average based on the updated window
+          return updatedLevels;
+        });
 
         if (data.some((v) => v)) {
           if (triggered) {
@@ -95,13 +104,27 @@ const SpeechRecorder = () => {
   //     clearInterval(calculateNoiseAverage);
   //   };
   // }, [noiseLevel]);
+  // useEffect(() => {
+  //   if (noiseLevels.length > 0) {
+  //     const sum = noiseLevels.reduce((total, level) => total + level, 0);
+  //     const average = sum / noiseLevels.length;
+  //     setNoiseAverage(average);
+  //   }
+  // }, [noiseLevels]);
+  const calculateAverage = (values) => {
+    if (values.length === 0) {
+      return 0;
+    }
+    const sum = values.reduce((total, level) => total + level, 0);
+    return sum / values.length;
+  };
 
   useEffect(() => {
-    if (noiseAverage >= 80) {
+    if (noiseAverage < 5) {
       setAudioCategory('Excellent');
-    } else if (noiseAverage >= 60) {
+    } else if (noiseAverage < 10) {
       setAudioCategory('Good');
-    } else if (noiseAverage >= 40) {
+    } else if (noiseAverage < 20) {
       setAudioCategory('Bad');
     } else {
       setAudioCategory('Poor');
@@ -116,8 +139,8 @@ const SpeechRecorder = () => {
           </div>
         ) : (
           <>
-          
           <div className={`indicator ${isSpeaking ? 'speaking' : 'silence'}`} />
+          <div className="average">Noise Average: {noiseAverage.toFixed(2)}</div>
           <div>Noise Level: {noiseLevel.toFixed(2)}</div>
           <div>Audio Category: {audioCategory}</div>
           </>
