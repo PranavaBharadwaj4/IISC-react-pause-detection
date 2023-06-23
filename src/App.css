@@ -77,3 +77,8 @@ button:disabled {
   background-color: red;
   color: white;
 }
+
+.canvas-container{  
+  width: 100rem;
+  height: 40rem;
+}
